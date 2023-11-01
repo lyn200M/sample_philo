@@ -1,71 +1,93 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   helper.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: lnyamets <lnyamets@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/11/01 21:42:12 by lnyamets          #+#    #+#             */
+/*   Updated: 2023/11/01 21:45:00 by lnyamets         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "philosopher.h"
 
-int log_error(void)
+int	log_error(void)
 {
-    printf("Param Error\n");
-    return (1);
+	printf("Param Error\n");
+	return (1);
 }
 
-int is_good_args(char **av)
+int	is_good_args(char **av)
 {
-    int i;
-    int j;
+	int	i;
+	int	j;
 
-    i = 1;
-    while (av[i])
-    {
-        j = 0;
-        while (av[i][j])
-        {
-            if ((av[i][j] < '0' || av[i][j] > '9') && j != 0)
-                return (1); //todo bien logger l'erreur et son emplacement
-            j++;
-        }
-        i++;
-    }
-    return (0);
+	i = 1;
+	while (av[i])
+	{
+		j = 0;
+		while (av[i][j])
+		{
+			if ((av[i][j] < '0' || av[i][j] > '9') && j != 0)
+				return (1);
+			j++;
+		}
+		i++;
+	}
+	return (0);
 }
 
-int ft_atoi(char *str)
+int	ft_atoi(char *str)
 {
-    int i;
-    int result;
-    int sign;
+	int	i;
+	int	result;
+	int	sign;
 
-    i = 0;
-    result = 0;
-    sign = 1;
-    while (str[i] == ' ' || str[i] == '\t' || str[i] == '\n'
+	i = 0;
+	result = 0;
+	sign = 1;
+	while (str[i] == ' ' || str[i] == '\t' || str[i] == '\n'
 		|| str[i] == '\v' || str[i] == '\f' || str[i] == '\r')
 		i++;
-    if (str[i] == '-' || str[i] == '+')
+	if (str[i] == '-' || str[i] == '+')
 	{
 		if (str[i] == '-')
-            sign *= -1;
-        i++;
-    }
-    while (str[i] >= '0' && str[i] <= '9')
+			sign *= -1;
+		i++;
+	}
+	while (str[i] >= '0' && str[i] <= '9')
 	{
-        result = (result * 10) + str[i] - '0';
-        i++;
-    }
-    return (result * sign);
+		result = (result * 10) + str[i] - '0';
+		i++;
+	}
+	return (result * sign);
 }
 
-unsigned long   get_current_time_in_ms(void)
+unsigned long	get_current_time_in_ms(void)
 {
-    struct  timeval time;
-    gettimeofday(&time, NULL);
-    return (time.tv_sec * 1000 + time.tv_usec / 1000);
+	struct timeval	time;
+
+	gettimeofday(&time, NULL);
+	return (time.tv_sec * 1000 + time.tv_usec / 1000);
 }
 
-int free_data_struct(t_philosophe *p_all_philosophe, t_simulation_params *simu_parametters, pthread_mutex_t *p_mutex)
+int	free_data_struct(t_philosophe *p_all_philosophe,
+	t_simulation_params *simu_parametters, pthread_mutex_t *p_mutex)
 {
-    if (simu_parametters)
-        free(simu_parametters);
-    if (p_all_philosophe)
-        free(p_all_philosophe);
-    if (p_mutex)
-        free(p_mutex);
-    return (1);
+	int	i;
+
+	i = 0;
+	if (p_all_philosophe)
+	{
+		free(p_all_philosophe->print_behavior_mutex);
+		free(p_all_philosophe);
+	}
+	if (p_mutex)
+	{
+		free(p_mutex);
+	}
+	if (simu_parametters)
+		free(simu_parametters);
+	return (1);
 }
