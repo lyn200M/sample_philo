@@ -6,14 +6,14 @@
 /*   By: lnyamets <lnyamets@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/01 21:47:15 by lnyamets          #+#    #+#             */
-/*   Updated: 2023/11/02 03:26:55 by lnyamets         ###   ########.fr       */
+/*   Updated: 2023/11/02 04:35:34 by lnyamets         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philosopher.h"
 
 void	philosopher_simulation(t_philosophe *p_all_philosophe
-	, t_simulation_params *simu_parametters, SharedInfo *shared_info)
+	, t_simulation_params *simu_parametters, t_sharedInfo *shared_info)
 {
 	int	index;
 
@@ -24,20 +24,17 @@ void	philosopher_simulation(t_philosophe *p_all_philosophe
 			== p_all_philosophe[index].params->num_philosophes)
 		{
 			shared_info->philosopher_died = 1;
-			//destroy_and_free(p_all_philosophe, simu_parametters);
 			return ;
 		}
 		if ((get_current_time_in_ms() - p_all_philosophe[index].last_meal_time)
 			> (unsigned long)simu_parametters->time_to_die)
 		{
-			usleep(100);//
+			usleep(100);
 			pthread_mutex_lock(p_all_philosophe->print_behavior_mutex);
 			printf("%lums	philosopher: %d died :(\n", elapsed_time
 				(p_all_philosophe), p_all_philosophe->id);
 			shared_info->philosopher_died = 1;
-			 pthread_mutex_unlock(p_all_philosophe->print_behavior_mutex);
-			//destroy_fork_mutexs(p_all_philosophe);
-			//destroy_and_free(p_all_philosophe, simu_parametters);
+			pthread_mutex_unlock(p_all_philosophe->print_behavior_mutex);
 			return ;
 		}
 		index = (index + 1) % simu_parametters->num_philosophes;
@@ -47,11 +44,11 @@ void	philosopher_simulation(t_philosophe *p_all_philosophe
 
 void	*philosopher_behavior(void *arg)
 {
-	ThreadArgs		*thread_args;
+	t_threadArgs	*thread_args;
 	t_philosophe	*p_philosophe;
-	SharedInfo		*shared_info;
+	t_sharedInfo	*shared_info;
 
-	thread_args = (ThreadArgs *)arg;
+	thread_args = (t_threadArgs *)arg;
 	p_philosophe = thread_args->p_philosophe;
 	shared_info = thread_args->shared_info;
 	if (p_philosophe->id % 2 == 0)
@@ -61,29 +58,12 @@ void	*philosopher_behavior(void *arg)
 	{
 		if (p_philosophe->params->num_philosophes == 1)
 		{
-			pthread_mutex_lock(&p_philosophe->fork_mutex[p_philosophe->id - 1]);
-			print_behavior(p_philosophe, elapsed_time(p_philosophe),
-				L_FORK_BHVR, shared_info);
-			pthread_mutex_unlock(&p_philosophe->fork_mutex
-			[p_philosophe->id - 1]);
+			one_philosopher_behavior(p_philosophe, shared_info);
 			break ;
 		}
 		if (shared_info->philosopher_died)
 			break ;
-		eating_simulation(p_philosophe, shared_info);
-		p_philosophe->meals_to_eaten++;
-		if (p_philosophe->meals_to_eaten == p_philosophe->params->meals_to_eat)
-			p_philosophe->params->total_meals_eaten++;
-		usleep(p_philosophe->params->time_to_eat * 1000);
-		p_philosophe->last_meal_time = get_current_time_in_ms();
-		pthread_mutex_unlock(&p_philosophe->fork_mutex[p_philosophe->id - 1]);
-		pthread_mutex_unlock(&p_philosophe->fork_mutex[p_philosophe->id
-			% p_philosophe->params->num_philosophes]);
-		print_behavior(p_philosophe, elapsed_time(p_philosophe),
-			SLEEP_BHVR, shared_info);
-		usleep(p_philosophe->params->time_to_sleep * 1000);
-		print_behavior(p_philosophe, elapsed_time(p_philosophe),
-			THINK_BHVR, shared_info);
+		multi_philosophers_behavior(p_philosophe, shared_info);
 	}
 	return (0);
 }
@@ -142,9 +122,8 @@ int	main(int ac, char **av)
 	t_simulation_params	*s_prm;
 	t_philosophe		*p_all_philosophe;
 	pthread_t			*p_threads;
-	int					i;
-	SharedInfo			shared_info;
-	ThreadArgs			*thread_args;
+	t_sharedInfo		shared_info;
+	t_threadArgs		*thread_args;
 
 	shared_info.philosopher_died = 0;
 	if (ac != 5 && ac != 6)
@@ -157,19 +136,12 @@ int	main(int ac, char **av)
 	if (init_philosophe(p_all_philosophe, s_prm))
 		return (1);
 	p_threads = (pthread_t *)malloc(sizeof(pthread_t) * s_prm->num_philosophes);
-	i = -1;
-	thread_args = (ThreadArgs *)malloc
-		(s_prm->num_philosophes * sizeof(ThreadArgs));
-	while (++i < p_all_philosophe->params->num_philosophes)
-	{
-		thread_args[i].p_philosophe = p_all_philosophe + i;
-		thread_args[i].shared_info = &shared_info;
-		pthread_create(&p_threads[i], NULL, philosopher_behavior,
-			&thread_args[i]);
-		usleep(100);
-	}
+	thread_args = (t_threadArgs *)malloc
+		(s_prm->num_philosophes * sizeof(t_threadArgs));
+	create_philosopher_threads(p_all_philosophe, p_threads, thread_args,
+		&shared_info);
 	philosopher_simulation(p_all_philosophe, s_prm, &shared_info);
 	join_threads(p_threads, av);
-	free(p_threads);
+	destroy_and_free(p_all_philosophe, s_prm, thread_args, p_threads);
 	return (0);
 }
