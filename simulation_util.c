@@ -6,7 +6,7 @@
 /*   By: lnyamets <lnyamets@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/01 21:46:56 by lnyamets          #+#    #+#             */
-/*   Updated: 2023/11/01 22:54:30 by lnyamets         ###   ########.fr       */
+/*   Updated: 2023/11/02 02:47:51 by lnyamets         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,12 +26,15 @@ void	destroy_fork_mutexs(t_philosophe *p_all_philosophe)
 }
 
 void	print_behavior(t_philosophe *p_philosophe, unsigned long time,
-	char *bahavior_msg)
+	char *bahavior_msg, SharedInfo *shared_info)
 {
+	if (!shared_info->philosopher_died)
+    {
 	pthread_mutex_lock(p_philosophe->print_behavior_mutex);
 	printf("%lums	philosopher: %d %s\n", time, p_philosophe->id,
 		bahavior_msg);
 	pthread_mutex_unlock(p_philosophe->print_behavior_mutex);
+	}
 }
 
 unsigned long	elapsed_time(t_philosophe *p_philosophe)
